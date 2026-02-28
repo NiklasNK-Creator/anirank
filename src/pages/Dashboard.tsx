@@ -1,80 +1,20 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getTopAnime, getSeasonNow, JikanAnime } from "@/lib/jikan";
-import { supabase } from "@/integrations/supabase/client";
-import { groupAnimeByFranchise, GroupedAnime } from "@/lib/groupAnime";
+import { useTopAnime, useSeasonNow } from "@/hooks/useJikan";
+import { useWatchlistIds } from "@/hooks/useWatchlistIds";
 import AnimeCard from "@/components/AnimeCard";
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, TrendingUp, Calendar, Bookmark } from "lucide-react";
-import { toast } from "sonner";
 import heroBg from "@/assets/hero-bg.jpg";
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [topGroups, setTopGroups] = useState<GroupedAnime[]>([]);
-  const [seasonGroups, setSeasonGroups] = useState<GroupedAnime[]>([]);
-  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const { data: topGroups = [], isLoading: topLoading } = useTopAnime(20);
+  const { data: seasonGroups = [], isLoading: seasonLoading } = useSeasonNow();
+  const { watchlistIds, toggleWatchlist } = useWatchlistIds();
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [top, season] = await Promise.all([
-          getTopAnime(1, 20),
-          getSeasonNow(1),
-        ]);
-        setTopGroups(groupAnimeByFranchise(top.data).slice(0, 10));
-        setSeasonGroups(groupAnimeByFranchise(season.data).slice(0, 10));
-      } catch {
-        // Jikan rate limit
-      }
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("watchlist")
-      .select("anime_id")
-      .eq("user_id", user.id)
-      .then(({ data }) => {
-        if (data) setWatchlistIds(new Set(data.map((d) => d.anime_id)));
-      });
-  }, [user]);
-
-  const addToWatchlist = async (anime: JikanAnime) => {
-    if (!user) {
-      toast.error("Please sign in first!");
-      return;
-    }
-    if (watchlistIds.has(anime.mal_id)) {
-      const { error } = await supabase
-        .from("watchlist")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("anime_id", anime.mal_id);
-      if (!error) {
-        setWatchlistIds((prev) => { const n = new Set(prev); n.delete(anime.mal_id); return n; });
-        toast.success("Removed from watchlist");
-      }
-    } else {
-      const { error } = await supabase.from("watchlist").insert({
-        user_id: user.id,
-        anime_id: anime.mal_id,
-        anime_title: anime.title_english || anime.title,
-        anime_image: anime.images.webp?.large_image_url || anime.images.jpg.large_image_url,
-        total_episodes: anime.episodes,
-      });
-      if (!error) {
-        setWatchlistIds((prev) => new Set(prev).add(anime.mal_id));
-        toast.success("Added to watchlist!");
-      }
-    }
-  };
+  const loading = topLoading || seasonLoading;
 
   return (
     <Layout>
@@ -85,7 +25,7 @@ export default function Dashboard() {
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
         </div>
         <div className="container relative py-20 md:py-28">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="max-w-2xl">
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-2xl">
             <h1 className="font-display text-4xl md:text-6xl font-bold leading-tight">
               Track, Rank &<br />
               <span className="text-primary text-glow-cyan">Discover</span> Anime
@@ -128,11 +68,11 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {topGroups.map((group) => (
+            {topGroups.slice(0, 10).map((group) => (
               <AnimeCard
                 key={group.main.mal_id}
                 anime={group.main}
-                onAdd={addToWatchlist}
+                onAdd={toggleWatchlist}
                 isInWatchlist={watchlistIds.has(group.main.mal_id)}
                 seasonCount={group.seasons.length}
                 totalEpisodes={group.totalEpisodes}
@@ -149,11 +89,11 @@ export default function Dashboard() {
           <h2 className="font-display text-2xl font-bold">This Season</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {seasonGroups.map((group) => (
+          {seasonGroups.slice(0, 10).map((group) => (
             <AnimeCard
               key={group.main.mal_id}
               anime={group.main}
-              onAdd={addToWatchlist}
+              onAdd={toggleWatchlist}
               isInWatchlist={watchlistIds.has(group.main.mal_id)}
               seasonCount={group.seasons.length}
               totalEpisodes={group.totalEpisodes}
