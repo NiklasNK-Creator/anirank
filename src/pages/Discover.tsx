@@ -1,99 +1,73 @@
-import { useEffect, useState, useCallback } from "react";
-import { searchAnime, getTopAnime, JikanAnime } from "@/lib/jikan";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { groupAnimeByFranchise, GroupedAnime } from "@/lib/groupAnime";
+import { useState, useCallback } from "react";
+import { useTopAnime, useAnimeSearch } from "@/hooks/useJikan";
+import { useWatchlistIds } from "@/hooks/useWatchlistIds";
 import AnimeCard from "@/components/AnimeCard";
 import Layout from "@/components/Layout";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Search, X } from "lucide-react";
 
 export default function Discover() {
-  const { user } = useAuth();
   const [query, setQuery] = useState("");
-  const [groups, setGroups] = useState<GroupedAnime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: topGroups = [], isLoading: topLoading } = useTopAnime(25);
+  const { data: searchGroups = [], isLoading: searchLoading, isFetching } = useAnimeSearch(searchTerm, searchTerm.length > 0);
+  const { watchlistIds, toggleWatchlist } = useWatchlistIds();
 
-  useEffect(() => {
-    getTopAnime(1, 25).then((r) => { setGroups(groupAnimeByFranchise(r.data)); setLoading(false); }).catch(() => setLoading(false));
-  }, []);
+  const isSearching = searchTerm.length > 0;
+  const groups = isSearching ? searchGroups : topGroups;
+  const loading = isSearching ? searchLoading : topLoading;
 
-  useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("watchlist")
-      .select("anime_id")
-      .eq("user_id", user.id)
-      .then(({ data }) => {
-        if (data) setWatchlistIds(new Set(data.map((d) => d.anime_id)));
-      });
-  }, [user]);
-
-  const doSearch = useCallback(async () => {
-    if (!query.trim()) return;
-    setLoading(true);
-    try {
-      const res = await searchAnime(query);
-      setGroups(groupAnimeByFranchise(res.data));
-    } catch {
-      toast.error("Search failed, please try again");
-    }
-    setLoading(false);
+  const doSearch = useCallback(() => {
+    if (query.trim()) setSearchTerm(query.trim());
   }, [query]);
 
-  const addToWatchlist = async (anime: JikanAnime) => {
-    if (!user) {
-      toast.error("Please sign in first!");
-      return;
-    }
-    if (watchlistIds.has(anime.mal_id)) {
-      await supabase.from("watchlist").delete().eq("user_id", user.id).eq("anime_id", anime.mal_id);
-      setWatchlistIds((prev) => { const n = new Set(prev); n.delete(anime.mal_id); return n; });
-      toast.success("Removed");
-    } else {
-      await supabase.from("watchlist").insert({
-        user_id: user.id,
-        anime_id: anime.mal_id,
-        anime_title: anime.title_english || anime.title,
-        anime_image: anime.images.webp?.large_image_url || anime.images.jpg.large_image_url,
-        total_episodes: anime.episodes,
-      });
-      setWatchlistIds((prev) => new Set(prev).add(anime.mal_id));
-      toast.success("Added to watchlist!");
-    }
-  };
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    setSearchTerm("");
+  }, []);
 
   return (
     <Layout>
       <div className="container py-8">
         <h1 className="font-display text-3xl font-bold mb-6">Discover Anime</h1>
 
-        <div className="relative max-w-xl mb-8">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && doSearch()}
-            placeholder="Search anime..."
-            className="pl-10 bg-card border-border focus:border-primary"
-          />
+        <div className="relative max-w-xl mb-8 flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSearch()}
+              placeholder="Search anime..."
+              className="pl-10 bg-card border-border focus:border-primary"
+            />
+            {query && (
+              <button onClick={clearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button onClick={doSearch} disabled={!query.trim()} className="bg-primary text-primary-foreground hover:bg-primary/90">
+            Search
+          </Button>
         </div>
 
-        {loading ? (
+        {(loading || isFetching) ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] rounded-xl bg-muted animate-pulse" />
             ))}
           </div>
+        ) : groups.length === 0 ? (
+          <p className="text-center text-muted-foreground py-12">No results found. Try a different search.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {groups.map((group) => (
               <AnimeCard
                 key={group.main.mal_id}
                 anime={group.main}
-                onAdd={addToWatchlist}
+                onAdd={toggleWatchlist}
                 isInWatchlist={watchlistIds.has(group.main.mal_id)}
                 seasonCount={group.seasons.length}
                 totalEpisodes={group.totalEpisodes}

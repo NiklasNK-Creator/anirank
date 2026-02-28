@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
-import { Save, BarChart3, List, Trophy, Eye, EyeOff } from "lucide-react";
+import { Save, BarChart3, List, Trophy, Eye } from "lucide-react";
 import { motion } from "framer-motion";
+import ImageUpload from "@/components/ImageUpload";
 
 interface ProfileData {
   username: string;
@@ -181,6 +182,30 @@ export default function Profile() {
             animate={{ opacity: 1 }}
             className="rounded-xl bg-card border border-border p-6 space-y-4 max-w-lg"
           >
+            {/* Image uploads */}
+            <div>
+              <Label className="text-foreground">Banner Image</Label>
+              <ImageUpload
+                bucket="banners"
+                currentUrl={form.banner_url}
+                onUpload={(url) => setForm({ ...form, banner_url: url })}
+                aspectRatio="aspect-[4/1]"
+                placeholder="Upload Banner"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-foreground">Avatar Image</Label>
+              <ImageUpload
+                bucket="avatars"
+                currentUrl={form.avatar_url}
+                onUpload={(url) => setForm({ ...form, avatar_url: url })}
+                aspectRatio="aspect-square"
+                placeholder="Upload Avatar"
+                className="mt-1 w-28"
+              />
+            </div>
+
             <div>
               <Label className="text-foreground">Username</Label>
               <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="mt-1 bg-muted border-border" />
@@ -192,14 +217,6 @@ export default function Profile() {
             <div>
               <Label className="text-foreground">Bio</Label>
               <Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="mt-1 bg-muted border-border" rows={3} />
-            </div>
-            <div>
-              <Label className="text-foreground">Avatar URL</Label>
-              <Input value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} className="mt-1 bg-muted border-border" placeholder="https://..." />
-            </div>
-            <div>
-              <Label className="text-foreground">Banner URL</Label>
-              <Input value={form.banner_url} onChange={(e) => setForm({ ...form, banner_url: e.target.value })} className="mt-1 bg-muted border-border" placeholder="https://..." />
             </div>
 
             {/* Visibility toggles */}

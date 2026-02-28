@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Trash2, Star, Eye, Clock, Pause, X } from "lucide-react";
 import { toast } from "sonner";
 import { Link, Navigate } from "react-router-dom";
@@ -93,7 +93,7 @@ export default function Watchlist() {
           </div>
         ) : (
           <Tabs defaultValue="watching">
-            <TabsList className="bg-muted mb-6">
+            <TabsList className="bg-muted mb-6 flex-wrap">
               {Object.entries(statusConfig).map(([key, config]) => (
                 <TabsTrigger key={key} value={key} className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary">
                   {config.label} ({filtered(key).length})
@@ -103,70 +103,76 @@ export default function Watchlist() {
 
             {Object.keys(statusConfig).map((status) => (
               <TabsContent key={status} value={status} className="space-y-3">
-                {filtered(status).map((item) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
-                  >
-                    <img
-                      src={item.anime_image}
-                      alt={item.anime_title}
-                      className="w-16 h-20 rounded-lg object-cover shrink-0"
-                    />
-                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">{item.anime_title}</h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {item.episodes_watched}/{item.total_episodes ?? "?"} episodes
-                        </span>
-                        <a
-                          href={`https://www.anisearch.de/anime/index?q=${encodeURIComponent(item.anime_title)}&smode=2`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary hover:text-primary/80 font-medium"
-                        >
-                          Watch Now ↗
-                        </a>
-                        {status === "watching" && (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => updateEpisodes(item.id, Math.max(0, item.episodes_watched - 1))}
-                              className="w-6 h-6 rounded bg-muted text-foreground text-xs hover:bg-primary/20"
-                            >-</button>
-                            <button
-              onClick={() => {
-                const max = item.total_episodes ?? Infinity;
-                if (item.episodes_watched < max) updateEpisodes(item.id, item.episodes_watched + 1);
-              }}
-                              className="w-6 h-6 rounded bg-muted text-foreground text-xs hover:bg-primary/20"
-                            >+</button>
-                          </div>
-                        )}
+                <AnimatePresence mode="popLayout">
+                  {filtered(status).map((item) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      transition={{ duration: 0.2 }}
+                      layout
+                      className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors"
+                    >
+                      <img
+                        src={item.anime_image}
+                        alt={item.anime_title}
+                        className="w-16 h-20 rounded-lg object-cover shrink-0"
+                        loading="lazy"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{item.anime_title}</h3>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className="text-xs text-muted-foreground">
+                            {item.episodes_watched}/{item.total_episodes ?? "?"} episodes
+                          </span>
+                          <a
+                            href={`https://www.anisearch.de/anime/index?q=${encodeURIComponent(item.anime_title)}&smode=2`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:text-primary/80 font-medium"
+                          >
+                            Watch Now ↗
+                          </a>
+                          {status === "watching" && (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => updateEpisodes(item.id, Math.max(0, item.episodes_watched - 1))}
+                                className="w-6 h-6 rounded bg-muted text-foreground text-xs hover:bg-primary/20 transition-colors"
+                              >-</button>
+                              <button
+                                onClick={() => {
+                                  const max = item.total_episodes ?? Infinity;
+                                  if (item.episodes_watched < max) updateEpisodes(item.id, item.episodes_watched + 1);
+                                }}
+                                className="w-6 h-6 rounded bg-muted text-foreground text-xs hover:bg-primary/20 transition-colors"
+                              >+</button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <select
-                        value={item.status}
-                        onChange={(e) => updateStatus(item.id, e.target.value)}
-                        className="text-xs bg-muted border border-border rounded-lg px-2 py-1 text-foreground"
-                      >
-                        {Object.entries(statusConfig).map(([k, v]) => (
-                          <option key={k} value={k}>{v.label}</option>
-                        ))}
-                      </select>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeItem(item.id)}
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <select
+                          value={item.status}
+                          onChange={(e) => updateStatus(item.id, e.target.value)}
+                          className="text-xs bg-muted border border-border rounded-lg px-2 py-1 text-foreground"
+                        >
+                          {Object.entries(statusConfig).map(([k, v]) => (
+                            <option key={k} value={k}>{v.label}</option>
+                          ))}
+                        </select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeItem(item.id)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
                 {filtered(status).length === 0 && (
                   <p className="text-center py-8 text-muted-foreground">No anime in this category.</p>
                 )}
