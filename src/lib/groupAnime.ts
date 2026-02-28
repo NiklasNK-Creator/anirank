@@ -1,5 +1,4 @@
 import { JikanAnime } from "./jikan";
-
 /**
  * Normalize an anime title to a base franchise name
  * so that e.g. "Frieren Season 2" and "Frieren" group together.
