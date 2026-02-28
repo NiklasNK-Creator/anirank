@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 230 20% 7%;
+    --foreground: 210 40% 95%;
+
+    --card: 230 18% 11%;
+    --card-foreground: 210 40% 95%;
+
+    --popover: 230 18% 11%;
+    --popover-foreground: 210 40% 95%;
+
+    --primary: 187 100% 42%;
+    --primary-foreground: 230 20% 7%;
+
+    --secondary: 330 80% 65%;
+    --secondary-foreground: 230 20% 7%;
+
+    --muted: 230 15% 16%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 270 60% 60%;
+    --accent-foreground: 210 40% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 95%;
+
+    --border: 230 15% 18%;
+    --input: 230 15% 18%;
+    --ring: 187 100% 42%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 230 18% 9%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 187 100% 42%;
+    --sidebar-primary-foreground: 230 20% 7%;
+    --sidebar-accent: 230 15% 16%;
+    --sidebar-accent-foreground: 210 40% 95%;
+    --sidebar-border: 230 15% 18%;
+    --sidebar-ring: 187 100% 42%;
+
+    --neon-cyan: 187 100% 42%;
+    --neon-pink: 330 80% 65%;
+    --neon-purple: 270 60% 60%;
+    --neon-green: 150 80% 50%;
+
+    --tier-s: 45 100% 55%;
+    --tier-a: 25 100% 55%;
+    --tier-b: 187 100% 42%;
+    --tier-c: 150 80% 50%;
+    --tier-d: 270 60% 60%;
+    --tier-f: 0 72% 51%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(187 100% 42% / 0.15), hsl(270 60% 60% / 0.15), hsl(330 80% 65% / 0.1));
+    --gradient-card: linear-gradient(145deg, hsl(230 18% 13%), hsl(230 18% 9%));
+    --gradient-neon: linear-gradient(135deg, hsl(187 100% 42%), hsl(270 60% 60%));
+
+    --shadow-neon: 0 0 20px hsl(187 100% 42% / 0.3);
+    --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.4);
+  }
+
+  .dark {
+    /* Already dark by default */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-glow-cyan {
+    text-shadow: 0 0 10px hsl(var(--neon-cyan) / 0.6), 0 0 30px hsl(var(--neon-cyan) / 0.3);
+  }
+
+  .text-glow-pink {
+    text-shadow: 0 0 10px hsl(var(--neon-pink) / 0.6), 0 0 30px hsl(var(--neon-pink) / 0.3);
+  }
+
+  .border-glow {
+    box-shadow: 0 0 10px hsl(var(--neon-cyan) / 0.2), inset 0 0 10px hsl(var(--neon-cyan) / 0.05);
+  }
+
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px hsl(0 0% 0% / 0.5), 0 0 20px hsl(var(--neon-cyan) / 0.15);
+  }
+
+  .anime-card-image {
+    @apply relative overflow-hidden rounded-lg;
+  }
+
+  .anime-card-image::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(to top, hsl(var(--background)) 0%, transparent 60%);
+  }
+
+  .tier-badge {
+    @apply inline-flex items-center justify-center w-10 h-10 rounded-lg font-bold text-lg;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
