@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Search, Menu, X, User, LogOut, Users, Shield, UserPlus } from "lucide-react";
+import NotificationBell from "@/components/NotificationBell";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -69,6 +70,8 @@ export default function Navbar() {
               <Search className="h-5 w-5" />
             </Button>
           </Link>
+
+          {user && <NotificationBell />}
 
           {user ? (
             <DropdownMenu>
